@@ -4,12 +4,14 @@
 #include <stdint.h>
 #include <pigpio.h>
 
-#define I2C_BUS           1
-#define MPU_ADDR        0x68
-#define REG_PWR_MGMT_1   0x6B
+#define I2C_BUS 1
+#define MPU_ADDR 0x68
+#define REG_PWR_MGMT_1 0x6B
 #define REG_ACCEL_CONFIG 0x1C
-#define REG_GYRO_CONFIG  0x1B
+#define REG_GYRO_CONFIG 0x1B
+#define REG_CONFIG 0x1A
 #define REG_ACCEL_XOUT_H 0x3B
+#define REG_GYRO_XOUT_H 0x43
 
 static int i2c_fd = -1;
 void die(const char *s){perror(s);}
