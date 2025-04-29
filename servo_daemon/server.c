@@ -10,7 +10,11 @@
 #include <errno.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
-
+#include <syslog.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #define SERVER_PORT 5000
 #define SAMPLE_HZ 10
 #define SERVO_MIN_US 1000
@@ -291,9 +295,62 @@ void *sampler(void *arg)
     return NULL;
 }
 
-/* ── main ───────────────────────────────────────────────────────── */
+
+int become_daemon()
+{
+    // make process into daemon using double fork method
+    // first fork
+    pid_t pid = fork();
+    if (pid < 0) {
+        syslog(LOG_ERR, "fork call failed");
+        return -1;
+    }
+    if (pid > 0) {
+        return -1;
+    }
+    
+    if (setsid() < 0) {
+        syslog(LOG_ERR, "setsid call failed");
+        return -1;
+    }
+    
+    // second fork
+    pid = fork();
+    if (pid < 0) {
+        syslog(LOG_ERR, "Second fork call failed");
+        return -1;
+    }
+    if (pid > 0) {
+        return -1;
+    }
+    
+    umask(0);
+    if (chdir("/") == -1) {
+        syslog(LOG_ERR, "Failed to change directory to /");
+        return -1;
+    }
+
+    int dev_null = open("/dev/null", O_RDWR);
+    if (dev_null == -1) {
+        syslog(LOG_ERR, "Failed to open /dev/null");
+        return -1;
+    }
+
+    dup2(dev_null, STDIN_FILENO);
+    dup2(dev_null, STDOUT_FILENO);
+    dup2(dev_null, STDERR_FILENO);
+    close(dev_null);
+    
+    return 0;
+}
+
 int main(void)
 {
+    if (become_daemon() != 0) {
+        /* should never happen */
+        exit(-1);
+    }
+    
     if (gpioInitialise() < 0)
     {
         die("pigpio");
